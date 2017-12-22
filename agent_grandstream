@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+
+
+import argparse
+import requests
+import re
+
+
+OK = '0'
+WARNING = '1'
+CRITICAL = '2'
+UNKNOWN = '3'
+
+
+class Agent(object):
+
+    parameter_mapping = [{
+        'active': 'P271',
+        'sip_user_id': 'P35',
+        'sip_server': 'P47',
+        'registered': 'PAccountRegistered1',
+    }, {
+        'active': 'P401',
+        'sip_user_id': 'P404',
+        'sip_server': 'P402',
+        'registered': 'PAccountRegistered2',
+    }]
+
+    def __init__(self, hostname, username, password):
+        self.session = requests.Session()
+        self.username = username
+        self.password = password
+        self.base_url = 'http://' + hostname + '/cgi-bin'
+        self.sid = None
+
+    def check(self):
+        self.login()
+
+        keys = ['vendor_name', 'phone_model', '68']
+        for account_mapping in self.parameter_mapping:
+            for value in account_mapping.values():
+                keys.append(value)
+
+        status = self.request('/api.values.get', ':'.join(keys))
+
+        accounts = []
+        for account_mapping in self.parameter_mapping:
+            accounts.append(Account(
+                active=status[account_mapping['active']],
+                sip_user_id=status[account_mapping['sip_user_id']],
+                sip_server=status[account_mapping['sip_server']],
+                registered=status[account_mapping['registered']],
+            ))
+
+        version = status['68']
+
+        print('<<<check_mk>>>')
+        print('Version: ' + version)
+        print('AgentOS: ' + status['vendor_name'] + ' ' + status['phone_model'])
+
+        print('<<<local>>>')
+        for account in accounts:
+            account.print_local_output()
+
+        uptime_seconds = self.get_uptime_seconds()
+        if uptime_seconds:
+            print('<<<uptime>>>')
+            print(uptime_seconds)
+
+
+    def login(self):
+        login_data = {'username': self.username, 'password': self.password}
+        r = self.session.post(self.base_url + '/dologin', data=login_data)
+        r.raise_for_status()
+        if r.json()['response'] != 'success':
+            raise Exception('Could not login')
+        self.sid = r.json()['body']['sid']
+
+    def request(self, sub_path, request):
+        data = {'sid': self.sid, 'request': request}
+        r = self.session.post(self.base_url + sub_path, data=data)
+        r.raise_for_status()
+        if r.json()['response'] != 'success':
+            raise Exception('Could not request status')
+        return r.json()['body']
+
+    def get_uptime_seconds(self):
+        r = self.session.get(self.base_url + '/api-get_time')
+        r.raise_for_status()
+        uptime_text = r.json()['uptime']
+        return self.parse_uptime(uptime_text)
+
+    def parse_uptime(self, text):
+        m = re.match('^(\d+) minute\(s\)', text)
+        if m:
+            return int(m.group(1)) * 60
+        m = re.match('^(\d+) hour\(s\)', text)
+        if m:
+            return int(m.group(1)) * 60 * 60
+        m = re.match('^(\d+) day\(s\)', text)
+        if m:
+            return int(m.group(1)) * 24 * 60 * 60
+
+
+class Account(object):
+    def __init__(self, active, sip_user_id, sip_server, registered):
+        self.active = active == '1'
+        self.sip_user_id = sip_user_id
+        self.sip_server = sip_server
+        self.registered = registered == '1'
+
+    def print_local_output(self):
+        if self.active:
+            numeric_status = OK if self.registered else CRITICAL
+            status = 'Registered' if self.registered else 'Not registered (!!)'
+            print('{} - SIP User ID {}, SIP Server {} - {}'.format(numeric_status,
+                self.sip_user_id, self.sip_server, status))
+
+
+def main():
+    args = parse_args()
+    agent = Agent(args.hostname, args.username, args.password)
+    agent.check()
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--username', default='admin')
+    parser.add_argument('--password', default='admin')
+    parser.add_argument('hostname')
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    main()
