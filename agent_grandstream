@@ -92,12 +92,13 @@ class Agent(object):
         return self.parse_uptime(uptime_text)
 
     def parse_uptime(self, text):
+        print(text)
         m = re.match('^(\d+) minute\(s\)', text)
         if m:
             return int(m.group(1)) * 60
-        m = re.match('^(\d+) hour\(s\)', text)
+        m = re.match('^(\d+):(\d+)', text)
         if m:
-            return int(m.group(1)) * 60 * 60
+            return int(m.group(1)) * 60 * 60 + int(m.group(2)) * 60
         m = re.match('^(\d+) day\(s\)', text)
         if m:
             return int(m.group(1)) * 24 * 60 * 60
