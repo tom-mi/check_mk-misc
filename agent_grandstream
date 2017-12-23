@@ -44,8 +44,9 @@ class Agent(object):
         status = self.request('/api.values.get', ':'.join(keys))
 
         accounts = []
-        for account_mapping in self.parameter_mapping:
+        for i, account_mapping in enumerate(self.parameter_mapping):
             accounts.append(Account(
+                account_id=(i+1),
                 active=status[account_mapping['active']],
                 sip_user_id=status[account_mapping['sip_user_id']],
                 sip_server=status[account_mapping['sip_server']],
@@ -103,7 +104,8 @@ class Agent(object):
 
 
 class Account(object):
-    def __init__(self, active, sip_user_id, sip_server, registered):
+    def __init__(self, account_id, active, sip_user_id, sip_server, registered):
+        self.account_id = account_id
         self.active = active == '1'
         self.sip_user_id = sip_user_id
         self.sip_server = sip_server
@@ -113,7 +115,8 @@ class Account(object):
         if self.active:
             numeric_status = OK if self.registered else CRITICAL
             status = 'Registered' if self.registered else 'Not registered (!!)'
-            print('{} - SIP User ID {}, SIP Server {} - {}'.format(numeric_status,
+            print('{} SIP_account_{} - SIP User ID {}, SIP Server {} - {}'.format(
+                numeric_status, self.account_id,
                 self.sip_user_id, self.sip_server, status))
 
 
