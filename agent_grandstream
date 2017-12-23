@@ -16,11 +16,13 @@ class Agent(object):
 
     parameter_mapping = [{
         'active': 'P271',
+        'name': 'P270',
         'sip_user_id': 'P35',
         'sip_server': 'P47',
         'registered': 'PAccountRegistered1',
     }, {
         'active': 'P401',
+        'name': 'P417',
         'sip_user_id': 'P404',
         'sip_server': 'P402',
         'registered': 'PAccountRegistered2',
@@ -47,6 +49,7 @@ class Agent(object):
         for i, account_mapping in enumerate(self.parameter_mapping):
             accounts.append(Account(
                 account_id=(i+1),
+                name=status[account_mapping['name']],
                 active=status[account_mapping['active']],
                 sip_user_id=status[account_mapping['sip_user_id']],
                 sip_server=status[account_mapping['sip_server']],
@@ -103,8 +106,9 @@ class Agent(object):
 
 
 class Account(object):
-    def __init__(self, account_id, active, sip_user_id, sip_server, registered):
+    def __init__(self, account_id, name, active, sip_user_id, sip_server, registered):
         self.account_id = account_id
+        self.name = name
         self.active = active == '1'
         self.sip_user_id = sip_user_id
         self.sip_server = sip_server
@@ -113,9 +117,9 @@ class Account(object):
     def print_local_output(self):
         if self.active:
             numeric_status = OK if self.registered else CRITICAL
-            status = 'Registered' if self.registered else 'Not registered (!!)'
-            print('{} SIP_account_{} - SIP User ID {}, SIP Server {} - {}'.format(
-                numeric_status, self.account_id,
+            status = 'Registered' if self.registered else 'Not registered'
+            print('{} SIP_account_{} - {} - user {}, server {} - {}'.format(
+                numeric_status, self.account_id, self.name,
                 self.sip_user_id, self.sip_server, status))
 
 
