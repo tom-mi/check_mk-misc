@@ -23,7 +23,7 @@ register_notification_parameters("telegram", Dictionary(
               regex_error = _('The URL must begin with <tt>http</tt> or '
                               '<tt>https</tt> and end with <tt>/check_mk/</tt>.'),
               size = 64,
-              default_value = 'http://' + socket.gethostname() + '/' + (
+              default_value = 'http://' + socket.getfqdn() + '/' + (
                       config.omd_site() and config.omd_site() + '/' or '') + 'check_mk/',
         )),
     ]
