@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+# Notify via telegram
+
+import os
+import requests
+import textwrap
+
+def main():
+    token = os.environ['NOTIFY_PARAMETER_TOKEN']
+    chat_id = os.environ['NOTIFY_PARAMETER_CHAT_ID']
+
+    if os.environ['NOTIFY_WHAT'] == 'HOST':
+        message = host_message()
+    else:
+        message = service_message()
+
+    url = 'https://api.telegram.org/bot{token}/sendMessage'.format(token=token)
+    r = requests.get(url, params={
+        'chat_id': chat_id,
+        'text': message,
+        'parse_mode': 'Markdown',
+    })
+    r.raise_for_status()
+
+
+def host_message():
+    return """
+*{NOTIFY_NOTIFICATIONTYPE}* - [{NOTIFY_HOSTNAME}]({host_url}) is *{NOTIFY_HOSTSTATE}*
+{NOTIFY_SHORTDATETIME}
+{NOTIFY_HOSTOUTPUT}
+""".strip().format(host_url=host_url(), **os.environ)
+
+
+def service_message():
+    return """
+*{NOTIFY_NOTIFICATIONTYPE}* - [{NOTIFY_HOSTNAME}]({host_url}) - [{NOTIFY_SERVICEDESC}]({service_url}) is *{NOTIFY_SERVICESTATE}*
+{NOTIFY_SHORTDATETIME}
+{NOTIFY_SERVICEOUTPUT}
+""".strip().format(host_url=host_url(), service_url=service_url(), **os.environ)
+
+
+def base_url():
+    return os.environ['NOTIFY_PARAMETER_URL_PREFIX']
+
+
+def host_url():
+    return base_url() + os.environ['NOTIFY_HOSTURL']
+
+
+def service_url():
+    return base_url() + os.environ['NOTIFY_SERVICEURL']
+
+
+if __name__ == '__main__':
+    main()

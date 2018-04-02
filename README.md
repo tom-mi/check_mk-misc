@@ -1,6 +1,6 @@
 # check_mk-misc
 
-Miscellaneous Check_MK checks.
+Miscellaneous Check_MK plugins.
 
 ## agent_grandstream
 
@@ -26,3 +26,14 @@ Agent to check the uptime of LevelOne Wireless Access Point WAP 0006
 ### Usage
 * copy the check to `~/local/share/check_mk/agents/special/agent_levelone_wap0006`
 * add a rule "Individual program call instead of agent access" with the command `~/local/share/check_mk/agents/special/agent_levelone_wap0006 $HOSTADDRESS$ --user admin --password $your-admin-password`
+
+## telegram
+
+Notification plugin for telegram
+
+### Usage
+
+* copy `telegram` to `~/local/share/check_mk/notifications/`
+* copy `notifications_telegram.py` to `~/local/share/check_mk/web/plugins/wato/`
+* Select the notification method 'Notify via telegram' from the dropdown
+* Fill token & chat id (see the [Telegram Documentation](https://core.telegram.org/bots) for how to create a bot and obtain the token)
