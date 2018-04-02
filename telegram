@@ -40,7 +40,11 @@ def service_message():
 
 
 def base_url():
-    return os.environ['NOTIFY_PARAMETER_URL_PREFIX']
+    url_prefix = os.environ['NOTIFY_PARAMETER_URL_PREFIX']
+    base_url = url_prefix.rstrip('/')
+    if base_url.endswith("/check_mk"):
+        base_url = base_url[:-9]
+    return base_url
 
 
 def host_url():
